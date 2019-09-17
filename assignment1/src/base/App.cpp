@@ -50,10 +50,7 @@ vector<Vertex> loadExampleModel() {
 	return vertices;
 }
 
-vector<Vertex> unpackIndexedData(
-	const vector<Vec3f>& positions,
-	const vector<Vec3f>& normals,
-	const vector<array<unsigned, 6>>& faces)
+vector<Vertex> unpackIndexedData(const vector<Vec3f>& positions,const vector<Vec3f>& normals,const vector<array<unsigned, 6>>& faces)
 {
 	vector<Vertex> vertices;
 
@@ -67,6 +64,8 @@ vector<Vertex> unpackIndexedData(
 		// YOUR CODE HERE (R3)
 		// Unpack the indexed data into a vertex array. For every face, you have to
 		// create three vertices and add them to the vector 'vertices'.
+		//f[0]= positions[0];
+		//f[1] = normals[0];
 
 		// f[0] is the index of the position of the first vertex
 		// f[1] is the index of the normal of the first vertex
@@ -129,7 +128,14 @@ vector<Vertex> loadUserGeneratedModel() {
 		// v0.position = ...
 		// Calculate the normal of the face from the positions and use it for all vertices.
 		// v0.normal = v1.normal = v2.normal = ...;
-		//
+		//height =1 radius = 0.25
+		v0.position = Vec3f(0.0f, 1.0f, 0.0f);
+		v1.position = Vec3f(FW::cos(i*9.0f/180*FW_PI)*0.25f, 0.0f , FW::sin(i * 9.0f / 180 * FW_PI) * 0.25f);
+		v2.position = Vec3f(FW::cos((i+1) * 9.0f / 180 * FW_PI) * 0.25f, 0.0f , FW::sin((i + 1) * 9.0f / 180 * FW_PI) * 0.25f);
+		v0.normal = cross(v0.position, v1.position);
+		v0.normal.normalize();
+		v1.normal = v0.normal;
+		v2.normal = v0.normal;
 		// Some hints:
 		// - Try just making a triangle in fixed coordinates at first.
 		// - "FW::cos(angle_increment * i) * radius" gives you the X-coordinate
@@ -218,14 +224,42 @@ bool App::handleEvent(const Window::Event& ev) {
 
 	if (ev.type == Window::EventType_KeyDown) {
 		// YOUR CODE HERE (R1)
+		if (ev.key == FW_KEY_RIGHT)
+			current_Translation.m03 += 0.1;
+		else if (ev.key == FW_KEY_LEFT)
+			current_Translation.m03 += -0.1;
+		else if (ev.key == FW_KEY_UP)
+			current_Translation.m13 += 0.1;
+		else if (ev.key == FW_KEY_DOWN)
+			current_Translation.m13 += -0.1;
+		else if (ev.key == FW_KEY_X) {
+			current_angle += 5.0f / 180.0f * FW_PI;
+			current_Rotation.m00 = FW::cos(current_angle);
+			current_Rotation.m02 = FW::sin(current_angle);
+			current_Rotation.m20 = -FW::sin(current_angle);
+			current_Rotation.m22 = FW::cos(current_angle);
+		}
+		else if (ev.key == FW_KEY_Z){
+			current_angle -= 5.0f / 180.0f * FW_PI;
+			current_Rotation.m00 = FW::cos(current_angle);
+			current_Rotation.m02 = FW::sin(current_angle);
+			current_Rotation.m20 = -FW::sin(current_angle);
+			current_Rotation.m22 = FW::cos(current_angle);
+		}
+	
+
+
+
 		// React to user input and move the model.
 		// Look in framework/gui/Keys.hpp for more key codes.
 		// Visual Studio tip: you can right-click an identifier like FW_KEY_HOME
 		// and "Go to definition" to jump directly to where the identifier is defined.
+		
 		if (ev.key == FW_KEY_HOME)
 			camera_rotation_angle_ -= 0.05 * FW_PI;
 		else if (ev.key == FW_KEY_END)
 			camera_rotation_angle_ += 0.05 * FW_PI;
+		
 	}
 	
 	if (ev.type == Window::EventType_KeyUp) {
@@ -284,8 +318,9 @@ void App::initRendering() {
 	glVertexAttribPointer(ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*) 0);
 	glEnableVertexAttribArray(ATTRIB_NORMAL);
 	glVertexAttribPointer(ATTRIB_NORMAL, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*) offsetof(Vertex, normal));
+
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
+	glBindVertexArray(0);	//cancle the previous bind
 	
 	// Compile and link the shader program.
 	// We use the Nvidia FW for creating the program; it's not difficult to do manually,
@@ -385,6 +420,7 @@ void App::render() {
 	// YOUR CODE HERE (R1)
 	// Set the model space -> world space transform to translate the model according to user input.
 	Mat4f modelToWorld;
+	modelToWorld = current_Rotation* current_Translation*modelToWorld;
 	
 	// Draw the model with your model-to-world transformation.
 	glUniformMatrix4fv(gl_.model_to_world_uniform, 1, GL_FALSE, modelToWorld.getPtr());

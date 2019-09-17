@@ -64,6 +64,10 @@ private:
 
 	// YOUR CODE HERE (R1)
 	// Add a class member to store the current translation.
+	Mat4f				current_Translation;
+	Mat4f				current_Rotation;
+	float					current_angle;
+	Mat4f				current_Scale;
 
 	// EXTRA:
 	// For animation extra credit you can use the framework's Timer class.
